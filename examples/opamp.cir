@@ -1,0 +1,6 @@
+* Ideal op-amp as VCVS
+V1 in 0 DC 1
+Rin in nminus 10k
+Rf  out nminus 100k
+EOP out 0 0 nminus A
+.end

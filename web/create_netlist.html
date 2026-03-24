@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Create Netlist</title>
+  <style>
+    :root {
+      --bg: #f4f6f8;
+      --surface: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --accent: #0f766e;
+      --border: #e5e7eb;
+      --shadow: 0 8px 24px rgba(17, 24, 39, 0.08);
+      --radius: 14px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(circle at top, #eef9f8 0%, var(--bg) 45%);
+      color: var(--text);
+      font-family: "Segoe UI", "Noto Sans", sans-serif;
+      padding: 24px;
+    }
+    .app {
+      width: min(980px, 100%);
+      margin: 0 auto;
+      display: grid;
+      gap: 14px;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 16px;
+    }
+    h1, h2 { margin: 0 0 8px; }
+    .sub { margin: 0; color: var(--muted); font-size: 0.95rem; line-height: 1.45; }
+    .field { display: grid; gap: 6px; }
+    label { font-size: 0.85rem; color: var(--muted); }
+    textarea, input[type="text"] {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 0.95rem;
+      background: #fff;
+      font-family: inherit;
+    }
+    textarea {
+      min-height: 220px;
+      resize: vertical;
+      font-family: "Consolas", "Courier New", monospace;
+      line-height: 1.45;
+    }
+    .actions {
+      margin-top: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+    button, a.button-link {
+      border: 0;
+      border-radius: 10px;
+      background: var(--accent);
+      color: #fff;
+      padding: 10px 16px;
+      font-size: 0.95rem;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+    }
+    button.secondary, a.button-link.secondary { background: #374151; }
+    .status { color: var(--muted); font-size: 0.9rem; min-height: 1.2em; }
+    .hint {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-top: 8px;
+    }
+    .paste-box {
+      border: 2px dashed var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      background: #f9fbfc;
+      color: var(--muted);
+      text-align: center;
+    }
+    .paste-box.ready {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: #eef9f8;
+    }
+    .preview-wrap img {
+      max-width: 100%;
+      max-height: 280px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      display: block;
+      margin-top: 10px;
+    }
+    .attached {
+      color: var(--accent);
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="card">
+      <h1>Create Netlist</h1>
+      <p class="sub">Ovde možeš da nalepiš Falstad export, konvertuješ ga u naš interni format, po potrebi ručno ispraviš vrednosti ili klikneš na `To Symbolic`, pa ga snimiš u `examples/` kao novi `.cir` fajl.</p>
+      <p class="hint">Hvala Paulu Falstadu na odličnom free softveru i tome što je ovakav alat učinio dostupnim i korisnim za akademsku upotrebu.</p>
+      <div class="actions">
+        <a class="button-link secondary" href="/">Back To Analysis</a>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="field">
+        <label for="falstadInput">Falstad netlist</label>
+        <textarea id="falstadInput" placeholder="$ 1 5.0E-6 10.2 50 5 43&#10;v 112 80 112 160 0 0 40 5 0 0 0.5&#10;r 112 80 224 80 0 1000&#10;c 224 80 224 160 0 0.000001 0&#10;w 224 160 112 160 0&#10;g 112 160 112 176 0"></textarea>
+      </div>
+      <div class="actions">
+        <button id="convertBtn" type="button">Convert Falstad</button>
+        <span class="status" id="status"></span>
+      </div>
+      <p class="hint">Podržano: žice, masa, `R`, `C`, `L`, `V`, `I` i Falstad `a` op-amp, koji se prevodi u naš idealni `O` element.</p>
+    </section>
+
+    <section class="card">
+      <div class="field">
+        <label for="pasteTarget">Circuit image</label>
+        <div id="pasteTarget" class="paste-box" tabindex="0">Klikni ovde pa `Ctrl+V` za screenshot, ili samo nalepi sliku bilo gde na ovoj stranici. Može i izbor fajla ispod.</div>
+      </div>
+      <div class="actions">
+        <input id="imageInput" type="file" accept="image/*" />
+        <button id="clearImageBtn" class="secondary" type="button">Clear Image</button>
+      </div>
+      <div id="imageMeta" class="hint">Ako sačuvaš netlist sa slikom, ona će biti snimljena u `assets/circuit_images/` i `* IMG:` komentar će biti dodat automatski.</div>
+      <div id="imagePreview" class="preview-wrap"></div>
+    </section>
+
+    <section class="card">
+      <div class="field">
+        <label for="netlistOutput">Internal netlist</label>
+        <textarea id="netlistOutput" placeholder="Ovde će biti interna netlista. Možeš i ručno da je napišeš od nule."></textarea>
+      </div>
+      <div class="actions">
+        <button id="symbolicBtn" type="button">To Symbolic</button>
+        <button id="appendEndBtn" class="secondary" type="button">Ensure .end</button>
+      </div>
+      <p class="hint">`To Symbolic` menja numeričke vrednosti u standardne simboličke oznake poput `R`, `C`, `L`, `Ug`.</p>
+    </section>
+
+    <section class="card">
+      <div class="field">
+        <label for="fileName">File name</label>
+        <input id="fileName" type="text" placeholder="npr. khn_from_falstad" />
+      </div>
+      <div class="actions">
+        <button id="saveBtn" type="button">Save Netlist</button>
+      </div>
+      <p class="hint">Ne unosi `.cir`; backend ga dodaje automatski i fajl se snima u `examples/`.</p>
+    </section>
+  </main>
+
+  <script>
+    const statusEl = document.getElementById('status');
+    const falstadInput = document.getElementById('falstadInput');
+    const netlistOutput = document.getElementById('netlistOutput');
+    const fileNameInput = document.getElementById('fileName');
+    const imageInput = document.getElementById('imageInput');
+    const imagePreview = document.getElementById('imagePreview');
+    const imageMeta = document.getElementById('imageMeta');
+    const pasteTarget = document.getElementById('pasteTarget');
+    let imageDataUrl = '';
+
+    function setStatus(msg) {
+      statusEl.textContent = msg || '';
+    }
+
+    function setImage(dataUrl, sourceLabel) {
+      imageDataUrl = dataUrl || '';
+      if (!imageDataUrl) {
+        imagePreview.innerHTML = '';
+        pasteTarget.classList.remove('ready');
+        pasteTarget.textContent = 'Klikni ovde pa Ctrl+V za screenshot, ili samo nalepi sliku bilo gde na ovoj stranici. Može i izbor fajla ispod.';
+        imageMeta.innerHTML = 'Ako sačuvaš netlist sa slikom, ona će biti snimljena u <code>assets/circuit_images/</code> i <code>* IMG:</code> komentar će biti dodat automatski.';
+        return;
+      }
+      pasteTarget.classList.add('ready');
+      pasteTarget.textContent = 'Image attached. Možeš odmah na Save Netlist.';
+      imagePreview.innerHTML = `<img alt="Circuit preview" src="${imageDataUrl}" />`;
+      imageMeta.innerHTML = `<span class="attached">Image loaded from ${sourceLabel}.</span> Save Netlist će je upisati automatski.`;
+    }
+
+    function readImageFile(file, sourceLabel) {
+      if (!file || !file.type.startsWith('image/')) {
+        setStatus('Izabrani fajl nije slika.');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        setImage(reader.result, sourceLabel);
+        setStatus('Image loaded.');
+      };
+      reader.onerror = () => setStatus('Image load failed.');
+      reader.readAsDataURL(file);
+    }
+
+    async function convertFalstad() {
+      const text = falstadInput.value.trim();
+      if (!text) {
+        setStatus('Nalepi Falstad netlist.');
+        return;
+      }
+
+      setStatus('Converting...');
+      try {
+        const res = await fetch('/api/convert-falstad', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({falstad_text: text})
+        });
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error || 'Conversion failed');
+        netlistOutput.value = data.translated_netlist;
+        setStatus('Falstad netlist converted.');
+      } catch (err) {
+        setStatus(`Error: ${err.message}`);
+      }
+    }
+
+    async function toSymbolic() {
+      const text = netlistOutput.value.trim();
+      if (!text) {
+        setStatus('Nema interne netliste za symbolic korak.');
+        return;
+      }
+
+      setStatus('Converting to symbolic...');
+      try {
+        const res = await fetch('/api/to-symbolic', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({netlist_text: text})
+        });
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error || 'Symbolic conversion failed');
+        netlistOutput.value = data.netlist_text;
+        setStatus('Netlist converted to symbolic form.');
+      } catch (err) {
+        setStatus(`Error: ${err.message}`);
+      }
+    }
+
+    function ensureEnd() {
+      const text = netlistOutput.value.trimEnd();
+      if (!text) {
+        setStatus('Nema netliste za dopunu.');
+        return;
+      }
+      if (text.toLowerCase().split(/\r?\n/).some(line => line.trim().toLowerCase() === '.end')) {
+        setStatus('Netlist already has .end.');
+        return;
+      }
+      netlistOutput.value = `${text}\n.end`;
+      setStatus('.end appended.');
+    }
+
+    async function saveNetlist() {
+      const name = fileNameInput.value.trim();
+      const text = netlistOutput.value.trim();
+      if (!name) {
+        setStatus('Unesi ime fajla.');
+        return;
+      }
+      if (!text) {
+        setStatus('Nema netliste za snimanje.');
+        return;
+      }
+
+      setStatus('Saving...');
+      try {
+        const res = await fetch('/api/save-netlist', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({name, netlist_text: text, image_data: imageDataUrl})
+        });
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error || 'Save failed');
+        window.location.href = `/?saved=1&netlist=${encodeURIComponent(data.path)}`;
+      } catch (err) {
+        setStatus(`Error: ${err.message}`);
+      }
+    }
+
+    document.getElementById('convertBtn').addEventListener('click', convertFalstad);
+    document.getElementById('symbolicBtn').addEventListener('click', toSymbolic);
+    document.getElementById('appendEndBtn').addEventListener('click', ensureEnd);
+    document.getElementById('saveBtn').addEventListener('click', saveNetlist);
+    document.getElementById('clearImageBtn').addEventListener('click', () => {
+      imageInput.value = '';
+      setImage('', 'clear');
+      setStatus('Image cleared.');
+    });
+    imageInput.addEventListener('change', (event) => {
+      const file = event.target.files && event.target.files[0];
+      if (file) readImageFile(file, 'file picker');
+    });
+    pasteTarget.addEventListener('paste', (event) => {
+      const items = Array.from(event.clipboardData?.items || []);
+      const imageItem = items.find(item => item.type.startsWith('image/'));
+      if (!imageItem) {
+        setStatus('Clipboard ne sadrži sliku.');
+        return;
+      }
+      const file = imageItem.getAsFile();
+      if (file) {
+        event.preventDefault();
+        readImageFile(file, 'clipboard paste');
+      }
+    });
+    document.addEventListener('paste', (event) => {
+      const active = document.activeElement;
+      if (active && (active.tagName === 'TEXTAREA' || active.tagName === 'INPUT')) {
+        return;
+      }
+      const items = Array.from(event.clipboardData?.items || []);
+      const imageItem = items.find(item => item.type.startsWith('image/'));
+      if (!imageItem) {
+        return;
+      }
+      const file = imageItem.getAsFile();
+      if (file) {
+        event.preventDefault();
+        readImageFile(file, 'page paste');
+      }
+    });
+    ['dragenter', 'dragover'].forEach(type => {
+      pasteTarget.addEventListener(type, (event) => {
+        event.preventDefault();
+        pasteTarget.classList.add('ready');
+      });
+    });
+    ['dragleave', 'drop'].forEach(type => {
+      pasteTarget.addEventListener(type, (event) => {
+        event.preventDefault();
+        if (!imageDataUrl) {
+          pasteTarget.classList.remove('ready');
+        }
+      });
+    });
+    pasteTarget.addEventListener('drop', (event) => {
+      const file = Array.from(event.dataTransfer?.files || []).find(f => f.type.startsWith('image/'));
+      if (file) {
+        readImageFile(file, 'drag and drop');
+      } else {
+        setStatus('Drop nije sadržao sliku.');
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+* Ideal transmission line example: source -> R1=Zc -> line -> C load
+V1 in 0 DC U
+R1 in 1 Zc
+T1 1 0 2 0 Zc tau
+C1 2 0 C
+.end

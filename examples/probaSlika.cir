@@ -1,0 +1,14 @@
+* Auto-generated from Falstad export
+V1 n1 0 DC Ug
+R1 n1 n5 R
+OOP1 n2 0 n5 n6
+R2 n2 n7 R
+OOP2 n9 0 0 n7
+R3 n9 n10 R
+OOP3 n12 0 0 n10
+R4 n12 0 R
+C1 n7 n9 C
+R5 n12 n6 R
+R6 n3 n2 R
+R7 n5 n9 R
+.end

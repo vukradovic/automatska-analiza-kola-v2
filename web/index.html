@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PRK Symbolic Circuit Analyzer</title>
+  <style>
+    :root {
+      --bg: #f4f6f8;
+      --surface: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --accent: #0f766e;
+      --border: #e5e7eb;
+      --shadow: 0 8px 24px rgba(17, 24, 39, 0.08);
+      --radius: 14px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background: radial-gradient(circle at top, #eef9f8 0%, var(--bg) 45%);
+      color: var(--text);
+      font-family: "Segoe UI", "Noto Sans", sans-serif;
+      padding: 24px;
+    }
+    .app {
+      width: min(980px, 100%);
+      display: grid;
+      gap: 14px;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 16px;
+    }
+    h1 { font-size: 1.4rem; margin: 0 0 6px; }
+    .sub { margin: 0; color: var(--muted); font-size: 0.95rem; }
+    .hero-actions {
+      margin-top: 12px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .grid {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    .field { display: grid; gap: 6px; }
+    label { font-size: 0.85rem; color: var(--muted); }
+    select, input[type="text"], input[type="number"] {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 9px 10px;
+      font-size: 0.95rem;
+      background: #fff;
+    }
+    .checks {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 8px;
+    }
+    .checks label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text);
+      font-size: 0.92rem;
+    }
+    .actions {
+      margin-top: 12px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    button, a.button-link {
+      border: 0;
+      border-radius: 10px;
+      background: var(--accent);
+      color: #fff;
+      padding: 10px 16px;
+      font-size: 0.95rem;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+    }
+    button.secondary { background: #374151; }
+    a.button-link.secondary { background: #0f766e; }
+    .status { color: var(--muted); font-size: 0.9rem; min-height: 1.2em; }
+    .section-title { margin: 0 0 8px; font-size: 1rem; font-weight: 600; color: #0f172a; }
+    .formula {
+      overflow-x: auto;
+      padding: 8px 10px;
+      border: 1px dashed var(--border);
+      border-radius: 10px;
+      background: #fcfcfd;
+      margin: 8px 0;
+    }
+    .img-wrap img {
+      max-width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      display: block;
+    }
+    @media (max-width: 860px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+  <main class="app">
+    <section class="card">
+      <h1>Symbolic Circuit Analyzer</h1>
+      <p class="sub">Izaberi netlist i analize. Rezultati su poređani ispod, jedan po jedan.</p>
+      <div class="hero-actions">
+        <a class="button-link secondary" href="/create-netlist">Create Netlist</a>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="grid">
+        <div class="field">
+          <label for="netlist">Netlist</label>
+          <select id="netlist"></select>
+        </div>
+        <div class="field">
+          <label for="inNode">In Node</label>
+          <input id="inNode" type="text" value="1" />
+        </div>
+        <div class="field">
+          <label for="outNode">Out Node</label>
+          <input id="outNode" type="text" value="2" />
+        </div>
+      </div>
+
+      <div class="grid" style="margin-top:10px;">
+        <div class="field" style="grid-column: 1 / -1;">
+          <label for="measuresInput">Measures (comma separated, e.g. <code>V(n2), I(C1), I(R1)</code>)</label>
+          <input id="measuresInput" type="text" value="" />
+        </div>
+      </div>
+
+      <div class="checks">
+        <label><input id="anTf" type="checkbox" checked /> Transfer / compact expressions</label>
+        <label><input id="anFreq" type="checkbox" checked /> Symbolic freq (A(ω), poles/zeros)</label>
+        <label><input id="anAmp" type="checkbox" checked /> Amplitude plot</label>
+        <label><input id="anS3db" type="checkbox" /> Symbolic 3dB (slow)</label>
+        <label><input id="anMeasTime" type="checkbox" checked /> Measure time-domain expressions</label>
+        <label><input id="anMeasPlot" type="checkbox" checked /> Measure plots</label>
+      </div>
+
+      <div class="actions">
+        <button id="runBtn" type="button">Run Analysis</button>
+        <button id="clearBtn" class="secondary" type="button">Clear</button>
+        <span id="status" class="status"></span>
+      </div>
+    </section>
+
+    <section id="res-transfer" class="card">
+      <h2 class="section-title">Transfer Function</h2>
+      <div id="tfContent" class="formula">\(H(s)\) output će biti ovde.</div>
+    </section>
+
+    <section id="res-circuit" class="card">
+      <h2 class="section-title">Circuit Feedback</h2>
+      <div id="circuitFeedback" class="formula">Ako netlist sadrži komentar tipa <code>* IMG: putanja_do_slike</code>, slika će se prikazati ovde.</div>
+      <div id="circuitImage" class="img-wrap"></div>
+    </section>
+
+    <section id="res-freq" class="card">
+      <h2 class="section-title">Frequency Analysis</h2>
+      <div id="freqContent" class="formula">\(A(\omega)\), nule i polovi.</div>
+    </section>
+
+    <section id="res-amp" class="card">
+      <h2 class="section-title">Amplitude Characteristic</h2>
+      <div id="ampMeta" class="formula">3dB markeri i \(\omega_{peak}\).</div>
+      <div id="ampPlot" class="img-wrap"></div>
+    </section>
+
+    <section id="res-measures" class="card">
+      <h2 class="section-title">Measured Quantities</h2>
+      <div id="measureContent" class="formula">Measured expressions and plots will appear here.</div>
+    </section>
+  </main>
+
+  <script>
+    const statusEl = document.getElementById('status');
+    const tfContent = document.getElementById('tfContent');
+    const freqContent = document.getElementById('freqContent');
+    const ampMeta = document.getElementById('ampMeta');
+    const ampPlot = document.getElementById('ampPlot');
+    const measureContent = document.getElementById('measureContent');
+    const netlistSelect = document.getElementById('netlist');
+    const inNodeInput = document.getElementById('inNode');
+    const outNodeInput = document.getElementById('outNode');
+
+    function setStatus(msg) { statusEl.textContent = msg || ''; }
+    function rerenderMath() {
+      if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise();
+    }
+
+    function applyNodeHints() {
+      const option = netlistSelect.selectedOptions[0];
+      if (!option) return;
+      const outHint = option.dataset.outNodeHint;
+      const inHint = option.dataset.inNodeHint;
+      if (outHint) outNodeInput.value = outHint;
+      if (inHint) inNodeInput.value = inHint;
+    }
+
+    async function loadNetlists() {
+      try {
+        const res = await fetch('/api/netlists');
+        const data = await res.json();
+        if (!data.ok) return;
+        netlistSelect.innerHTML = '';
+        data.items.forEach(item => {
+          const opt = document.createElement('option');
+          opt.value = item.path;
+          opt.textContent = item.name;
+          if (item.out_node_hint) opt.dataset.outNodeHint = item.out_node_hint;
+          if (item.in_node_hint) opt.dataset.inNodeHint = item.in_node_hint;
+          netlistSelect.appendChild(opt);
+        });
+
+        const params = new URLSearchParams(window.location.search);
+        const targetNetlist = params.get('netlist');
+        if (targetNetlist) {
+          netlistSelect.value = targetNetlist;
+        }
+        applyNodeHints();
+        const saved = params.get('saved');
+        if (saved === '1') {
+          setStatus('Netlist saved. Ready for analysis.');
+        }
+      } catch (err) {
+        setStatus('Netlist list failed to load.');
+      }
+    }
+
+    async function runAnalysis() {
+      setStatus('Running...');
+      try {
+        const payload = {
+          netlist: netlistSelect.value,
+          in_node: inNodeInput.value,
+          out_node: outNodeInput.value,
+          amp_w_max: 7,
+          amp_points: 1200,
+          analyses: {
+            tf: document.getElementById('anTf').checked,
+            symbolic_freq: document.getElementById('anFreq').checked,
+            amp_plot: document.getElementById('anAmp').checked,
+            symbolic_3db: document.getElementById('anS3db').checked,
+          },
+          measures: document.getElementById('measuresInput').value
+            .split(',')
+            .map(x => x.trim())
+            .filter(Boolean),
+          measure_time: document.getElementById('anMeasTime').checked,
+          measure_plot: document.getElementById('anMeasPlot').checked,
+          t_max: 6,
+          t_pre: 1,
+          n: 1000,
+        };
+
+        const res = await fetch('/api/analyze', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error || 'Analysis failed');
+
+        tfContent.innerHTML = [
+          `$$V_{in}(s)=${data.latex.vin}$$`,
+          `$$V_{out}(s)=${data.latex.vout}$$`,
+          `$$H(s)=${data.latex.h}$$`,
+          `<div>System order: <b>${data.system_order}</b></div>`
+        ].join('');
+
+        if (data.symbolic_freq) {
+          const f = data.symbolic_freq;
+          let html = [
+            `$$s_z=${f.latex.zeros}$$`,
+            `$$s_p=${f.latex.poles}$$`,
+            `$$H(j\\omega)=${f.latex.h_jw}$$`,
+            `$$A(\\omega)=${f.latex.a_w}$$`
+          ];
+          if (f.band_3db && f.band_3db.latex) {
+            const b = f.band_3db.latex;
+            if (b.omega_peak) html.push(`$$\\omega_{peak}=${b.omega_peak}$$`);
+            if (b.omega_3db_low) html.push(`$$\\omega_{3dB,low}=${b.omega_3db_low}$$`);
+            if (b.omega_3db_high) html.push(`$$\\omega_{3dB,high}=${b.omega_3db_high}$$`);
+            if (b.bandwidth_3db) html.push(`$$B_{3dB}=${b.bandwidth_3db}$$`);
+          }
+          freqContent.innerHTML = html.join('');
+        } else {
+          freqContent.innerHTML = '<div class="formula">Symbolic frequency analysis nije izabrana.</div>';
+        }
+
+        if (data.amp_plot) {
+          const m = data.amp_plot.markers;
+          ampMeta.innerHTML = [
+            `<div><b>A_peak</b>: ${m.A_peak}</div>`,
+            `<div><b>omega_peak</b>: ${m.omega_peak}</div>`,
+            `<div><b>omega_3dB_low</b>: ${m.omega_3db_low ?? 'n/a'}</div>`,
+            `<div><b>omega_3dB_high</b>: ${m.omega_3db_high ?? 'n/a'}</div>`
+          ].join('');
+          ampPlot.innerHTML = `<img alt="Amplitude plot" src="data:image/png;base64,${data.amp_plot.image_base64}" />`;
+        } else {
+          ampMeta.innerHTML = '<div class="formula">Amplitude plot nije izabran.</div>';
+          ampPlot.innerHTML = '';
+        }
+
+        if (data.measures && data.measures.length > 0) {
+          let mh = '';
+          data.measures.forEach(item => {
+            mh += `<div class="formula"><b>${item.name}</b>`;
+            mh += `$$${item.name.replace('_','\\_')}(s)=${item.s_latex}$$`;
+            if (item.t_latex) mh += `$$${item.name.replace('_','\\_')}(t)=${item.t_latex}$$`;
+            if (item.plot_defaults) {
+              mh += `<div>plot defaults: ${JSON.stringify(item.plot_defaults)}</div>`;
+            }
+            if (item.plot_base64) {
+              mh += `<div class="img-wrap"><img alt="${item.name} plot" src="data:image/png;base64,${item.plot_base64}" /></div>`;
+            }
+            mh += `</div>`;
+          });
+          measureContent.innerHTML = mh;
+        } else {
+          measureContent.innerHTML = '<div class="formula">No measures requested.</div>';
+        }
+
+        if (data.circuit_image_data_uri) {
+          document.getElementById('circuitFeedback').innerHTML = 'Pronađena slika kola iz netlista.';
+          document.getElementById('circuitImage').innerHTML = `<img alt="Circuit image" src="${data.circuit_image_data_uri}" />`;
+        } else {
+          document.getElementById('circuitFeedback').innerHTML = 'Nema pridružene slike kola u netlistu.';
+          document.getElementById('circuitImage').innerHTML = '';
+        }
+
+        rerenderMath();
+        setStatus('Done.');
+      } catch (err) {
+        setStatus(`Error: ${err.message}`);
+      }
+    }
+
+    document.getElementById('runBtn').addEventListener('click', runAnalysis);
+    netlistSelect.addEventListener('change', applyNodeHints);
+    document.getElementById('clearBtn').addEventListener('click', () => {
+      tfContent.textContent = 'H(s) output će biti ovde.';
+      freqContent.textContent = 'A(ω), nule i polovi.';
+      ampMeta.textContent = '3dB markeri i ωpeak.';
+      ampPlot.innerHTML = '';
+      measureContent.textContent = 'Measured expressions and plots will appear here.';
+      document.getElementById('circuitFeedback').innerHTML = 'Ako netlist sadrži komentar tipa * IMG: putanja_do_slike, slika će se prikazati ovde.';
+      document.getElementById('circuitImage').innerHTML = '';
+      setStatus('');
+      rerenderMath();
+    });
+
+    loadNetlists();
+    rerenderMath();
+  </script>
+</body>
+</html>

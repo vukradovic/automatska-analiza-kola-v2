@@ -1,0 +1,8 @@
+* Task 12 style: ideal transmission line + capacitive load
+* IMG: assets/circuit_images/tline_task12_cap.png
+* Conditions: R1 = Zc, ug = U*Heaviside(t), no initial energy
+V1 in 0 DC U
+R1 in n1 Zc
+T1 n1 0 n2 0 Zc tau
+C1 n2 0 C
+.end

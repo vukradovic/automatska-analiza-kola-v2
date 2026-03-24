@@ -1,0 +1,33 @@
+* KHN state-variable biquad (variant from assignment)
+* IMG: assets/circuit_images/khn_variant.png
+* Node mapping follows image labels: 1..8, output node 3 (band-pass) or 4 (low-pass), ground=0
+
+* Source
+V1 1 0 DC Ug
+
+* Given parameters:
+* R1 = R
+* R2 = R/2
+* R4 = 2R
+* R3 = R5 = R7 = R
+* C6 = C8 = sqrt(2)/(R*Om)
+
+R1 1 8 R
+R2 8 3 R/2
+R4 5 2 2*R
+R3 5 4 R
+R5 2 6 R
+R7 3 7 R
+
+C6 6 3 sqrt(2)/(R*Om)
+C8 7 4 sqrt(2)/(R*Om)
+
+* Output load omitted for symbolic textbook transfer (matches task solution form)
+* R9 4 0 RL
+
+* Ideal op-amps (direct MNA constraints V+ = V-)
+* Oname nout nref nplus nminus
+OOP1 2 0 8 5
+OOP2 3 0 0 6
+OOP3 4 0 0 7
+.end

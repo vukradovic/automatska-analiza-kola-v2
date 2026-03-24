@@ -1,0 +1,26 @@
+* KHN state-variable biquad (from assignment figure)
+* IMG: assets/circuit_images/khn.png
+* Nodes follow labels in the image: 1..8, ground=0
+* Source
+V1 1 0 DC Ug
+
+* Input/summing network
+R1 1 8 R
+R2 8 3 2*R
+R4 5 2 R
+R3 5 4 R
+R5 2 6 R
+R7 3 7 R
+
+* Integrator capacitors
+C6 6 3 1/(R*Om)
+C8 7 4 1/(R*Om)
+
+* Optional output load
+R9 4 0 RL
+
+* Ideal op-amps (direct MNA constraints V+ = V-)
+OOP1 2 0 8 5
+OOP2 3 0 0 6
+OOP3 4 0 0 7
+.end

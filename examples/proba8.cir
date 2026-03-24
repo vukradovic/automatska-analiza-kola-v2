@@ -1,0 +1,11 @@
+* IMG: assets/circuit_images/proba8.png
+* Auto-generated from Falstad export
+* OUT_NODE: n4
+V1 n1 0 DC Ug
+R1 n1 n5 2*R
+R2 n5 n2 R
+R3 n5 0 2*R
+C1 n2 0 1/(sqrt(2)*R*Om)
+OOP1 n4 0 n4 n2
+C2 n5 n4 sqrt(2)/(R*Om)
+.end

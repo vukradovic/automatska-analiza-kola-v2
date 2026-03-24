@@ -1,0 +1,15 @@
+* IMG: assets/circuit_images/PROBA_OUT.png
+* Auto-generated from Falstad export
+V1 n1 0 DC 5
+R1 n1 n5 1000
+OOP1 n2 0 n5 n6
+R2 n2 n7 1000
+OOP2 n9 0 0 n7
+R3 n9 n10 1000
+OOP3 out 0 0 n10
+R4 out 0 1000
+C1 n7 n9 0.00001
+R5 out n6 1000
+R6 n3 n2 1000
+R7 n5 n9 1000
+.end

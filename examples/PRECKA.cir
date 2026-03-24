@@ -1,0 +1,17 @@
+* IMG: assets/circuit_images/PRECKA.png
+* Auto-generated from Falstad export
+* OUT_NODE: n8
+V1 n1 0 DC Ug
+R1 n1 n4 R
+OOP1 n2 0 n4 n5
+R2 n2 n6 R
+OOP2 n8 0 0 n6
+R3 n8 n9 R
+OOP3 n11 0 0 n9
+R4 n11 0 R
+C1 n6 n8 1/(R*Om)
+R5 n11 n5 R
+R6 n5 n2 R
+R7 n4 n8 2*R
+C2 n9 n11 1/(R*Om)
+.end

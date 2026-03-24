@@ -1,0 +1,13 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.DS_Store
+
+# Matplotlib / generated outputs (po potrebi dodaj zaseban output folder)
+
+# IDE
+.vscode/

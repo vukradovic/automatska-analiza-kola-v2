@@ -1,0 +1,16 @@
+* IMG: assets/circuit_images/FINAL.png
+* Auto-generated from Falstad export
+V1 n1 0 DC Ug
+R1 n1 n5 R
+OOP1 n2 0 n5 n6
+R2 n2 n7 R
+OOP2 out 0 0 n7
+R3 out n9 R
+OOP3 n11 0 0 n9
+R4 n11 0 R
+C1 n7 out 1/(R*Om)
+R5 n11 n6 R
+R6 n3 n2 R
+R7 n5 out 2*R
+C2 n9 n11 1/(R*Om)
+.end
