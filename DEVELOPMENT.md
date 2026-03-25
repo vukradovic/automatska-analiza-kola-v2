@@ -8,7 +8,7 @@ Cilj je bio napraviti mali, SPICE‑like alat koji ne radi samo numeriku već i 
 
 ## 2. Parser netliste (ulaz)
 
-Prvi korak je bio da se definira jednostavan format ulaza (netlista):
+Prvi korak je bio da se definise jednostavan format ulaza (netlista):
 
 - svaka linija opisuje jedan element (R, L, C, V, E, O, T),
 - čvorovi su označeni imenima,
